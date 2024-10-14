@@ -1,0 +1,15 @@
+{
+  "CN": "*.jaaco.cloud",
+  "hosts": [""],
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "UK",
+      "O": "jaaco.cloud",
+      "OU": "Jaaco Cloud Services"
+    }
+  ]
+}

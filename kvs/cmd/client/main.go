@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"os"
 
 	"github.com/paulja/gokvs/proto/clerk"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
 )
 
 func main() {
@@ -67,12 +69,31 @@ func usage(msg string) {
 }
 
 func makeClient() clerk.ClerkServiceClient {
-	opts := []grpc.DialOption{
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	tlsCreds, err := makeTlsCredentials()
+	if err != nil {
+		panic(err)
 	}
-	conn, err := grpc.NewClient(":4000", opts...)
+	opts := []grpc.DialOption{
+		grpc.WithTransportCredentials(tlsCreds),
+	}
+	conn, err := grpc.NewClient(":4433", opts...)
 	if err != nil {
 		panic(err)
 	}
 	return clerk.NewClerkServiceClient(conn)
+}
+
+func makeTlsCredentials() (credentials.TransportCredentials, error) {
+	ca, err := os.ReadFile("../../etc/certs/ca.pem")
+	if err != nil {
+		return nil, err
+	}
+	pool := x509.NewCertPool()
+	if !pool.AppendCertsFromPEM(ca) {
+		return nil, fmt.Errorf("failed to add CA certificate")
+	}
+	conf := &tls.Config{
+		RootCAs: pool,
+	}
+	return credentials.NewTLS(conf), nil
 }

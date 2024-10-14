@@ -3,7 +3,7 @@ module github.com/paulja/gokvs/kvs
 go 1.23.2
 
 require (
-	github.com/paulja/gokvs/proto v0.0.0
+	github.com/paulja/gokvs/proto v0.0.0-20241014135101-219717915501
 	google.golang.org/grpc v1.67.1
 )
 
