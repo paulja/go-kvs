@@ -16,3 +16,23 @@ services:
       target: final
     ports:
       - 4000
+
+  collector:
+    image: otel/opentelemetry-collector-contrib
+    command: ["--config=/etc/otel-collector.yaml"]
+    volumes:
+      - ./etc/collector.yaml:/etc/otel-collector.yaml
+    ports:
+      - 4317:4317
+
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./etc/prometheus.yaml:/etc/prometheus/prometheus.yml
+    ports:
+      - 9090:9090
+
+  jaeger:
+    image: jaegertracing/all-in-one
+    ports:
+      - 16686:16686

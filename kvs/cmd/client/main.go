@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/paulja/gokvs/proto/clerk"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -75,6 +76,7 @@ func makeClient() clerk.ClerkServiceClient {
 	}
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(tlsCreds),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 	}
 	conn, err := grpc.NewClient(":4433", opts...)
 	if err != nil {
