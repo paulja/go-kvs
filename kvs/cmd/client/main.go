@@ -68,6 +68,20 @@ func usage(msg string) {
 	os.Exit(2)
 }
 
+type creds struct {
+	token string
+}
+
+func (c creds) GetRequestMetadata(ctx context.Context, in ...string) (map[string]string, error) {
+	return map[string]string{
+		"authorization": "Bearer " + c.token,
+	}, nil
+}
+
+func (creds) RequireTransportSecurity() bool {
+	return true
+}
+
 func makeClient() clerk.ClerkServiceClient {
 	tlsCreds, err := makeTlsCredentials()
 	if err != nil {
@@ -75,6 +89,9 @@ func makeClient() clerk.ClerkServiceClient {
 	}
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(tlsCreds),
+		grpc.WithPerRPCCredentials(creds{
+			token: "hello",
+		}),
 	}
 	conn, err := grpc.NewClient(":4433", opts...)
 	if err != nil {

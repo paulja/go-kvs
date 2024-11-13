@@ -9,6 +9,7 @@ import (
 	"github.com/paulja/gokvs/proto/clerk"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -32,9 +33,36 @@ func (s *Server) Run() error {
 	if err != nil {
 		return err
 	}
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(authIntercepter),
+	)
 	clerk.RegisterClerkServiceServer(grpcServer, s)
 	return grpcServer.Serve(listen)
+}
+
+func authIntercepter(
+	ctx context.Context,
+	req interface{},
+	info *grpc.UnaryServerInfo,
+	hander grpc.UnaryHandler,
+) (
+	interface{},
+	error,
+) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return "", status.Error(codes.Unauthenticated, "no headers in request")
+	}
+	headers, ok := md["authorization"]
+	if !ok {
+		return "", status.Error(codes.Unauthenticated, "no auth header in request")
+	}
+	if len(headers) != 1 {
+		return "", status.Error(codes.Unauthenticated, "more than 1 auth header in request")
+	}
+	tokenctx := context.WithValue(ctx, "authtoken", headers[0])
+	res, err := hander(tokenctx, req)
+	return res, err
 }
 
 func (s *Server) Put(_ context.Context, req *clerk.PutRequest) (*clerk.PutResponse, error) {
@@ -66,7 +94,10 @@ func (s *Server) Append(
 	}, nil
 }
 
-func (s *Server) Get(_ context.Context, req *clerk.GetRequest) (*clerk.GetResponse, error) {
+func (s *Server) Get(ctx context.Context, req *clerk.GetRequest) (*clerk.GetResponse, error) {
+	token := ctx.Value("authtoken")
+	fmt.Printf("token: %+v\n", token)
+
 	if len(req.Key) == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "missing key")
 	}
